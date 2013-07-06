@@ -142,6 +142,10 @@ byte clear_SAME_INTACK()
 
 String command_SAME_Message()
 {
+
+  // I forgot to give proper credit.. :)
+  // The idea for this came from http://dangerousprototypes.com/forum/viewtopic.php?f=19&t=2361&p=51691#p51691
+
   int readByte = 0;  // How much of the message we've read
   byte msgLength = command_SAME_Status(3);    // Get the message lenght
   String sameMessage = "ZCZC";  // This is part of the SAME message, but not icluded by the 4704
