@@ -72,6 +72,14 @@ void setup()
   // Serial is used to interact with the menu, and to print debug info
   Serial.begin(9600);
   
+  pinMode(13, OUTPUT); // Turn on a light while "receving a SAME message"
+  pinMode(9, OUTPUT); // Turn on a light when tuned to a valid weather channel
+  
+  digitalWrite(13, HIGH);
+  digitalWrite(9, HIGH);
+  
+  Serial.println("Initializing Si4707.");
+  
   // First, initSi4707() must be called. The function returns the value
   //  of the Part Number reported by the Si4707, which can be checked
   //  to verify communication. It should always be 7.
@@ -105,8 +113,35 @@ void setup()
 void loop()
 {
   // Wait for a serial byte to be received:
-  while( !Serial.available() )
-    ;
+  while( !Serial.available() ) {
+
+    // Go get the SAME status.  Turn on D13 if it's not 255.
+    byte sameStatus = command_SAME_Status(2);
+    
+//    if  ( sameStatus > 0 )
+//    {
+//      digitalWrite(13, LOW);
+//    } else {
+//      digitalWrite(13, HIGH);
+//    }
+    
+//    digitalWrite(13, !(sameStatus > 0));      // Update pin 13 based on recieved header messages
+    digitalWrite(9, !command_RSQ_Status(2) & 0x1);  // Update pin 9 with "valid" signal
+
+    if ( sameStatus == 3  ) {
+      Serial.print("Message Recieved: ");
+      Serial.println(command_SAME_Message());
+      digitalWrite(13,  LOW );  // If we've got a header.. give them a light.
+
+    }
+
+    if ( command_SAME_Status(1) & 0x8 ) {
+      Serial.println("Clearing INTACK");
+      clear_SAME_INTACK();
+      digitalWrite(13,  HIGH );  // If we've got a header.. give them a light.
+    }
+  }
+
   char c = Serial.read();
   // Once received, act on the serial input:
   switch (c)
@@ -296,6 +331,7 @@ void printSAMEStatus()
     Serial.print("Message length: ");
     Serial.println(command_SAME_Status(3));
   }
+  
 }
 
 // Depending on the value of the mute boolean, this function will either
@@ -313,3 +349,5 @@ void setVolume(int vol)
   vol = constrain(vol, 0, 63); // vol should be between 0 and 63 
   setProperty(PROPERTY_RX_VOLUME, vol);
 }
+
+

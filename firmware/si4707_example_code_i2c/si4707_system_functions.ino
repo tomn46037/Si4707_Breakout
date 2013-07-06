@@ -129,6 +129,71 @@ byte command_SAME_Status(byte returnIndex)
   
   return rsp[returnIndex];
 }
+
+byte clear_SAME_INTACK()
+{
+  cmd[0] = COMMAND_WB_SAME_STATUS;
+  cmd[1] = 0x01;
+  cmd[2] = 0;
+  
+  writeCommand(3, cmd, 14, rsp);
+  
+}
+
+String command_SAME_Message()
+{
+  int readByte = 0;  // How much of the message we've read
+  byte msgLength = command_SAME_Status(3);    // Get the message lenght
+  String sameMessage = "ZCZC";  // This is part of the SAME message, but not icluded by the 4704
+  String sameConf = "3333";  // Yeah, we're sure the constant above is good.  :)
+  
+  
+  while (readByte < msgLength) {
+  
+    cmd[0] = COMMAND_WB_SAME_STATUS;
+    cmd[1] = 0;
+    cmd[2] = readByte;  // Start where we left off
+  
+    writeCommand(3, cmd, 14, rsp);
+  
+    sameConf += rsp[4] & B11;
+    sameConf += (rsp[4] >> 2) & B11;
+    sameConf += (rsp[4] >> 4) & B11;
+    sameConf += (rsp[4] >> 6) & B11;
+    sameConf += rsp[5] & B11;
+    sameConf += (rsp[5] >> 2) & B11;
+    sameConf += (rsp[5] >> 4) & B11;
+    sameConf += (rsp[5] >> 6) & B11;
+
+    // Copy the message from the last command
+    for (int i = 0; i <= 7; i++)
+    {
+      sameMessage += (char) rsp[6+i];
+    }
+
+    // We've read 8 bytes, move ahead.
+    readByte = readByte + 8;
+
+ }
+
+  //Serial.print("Confidence: ");
+  //Serial.println(sameConf);
+  
+  // Clear the message buffer.
+  cmd[0] = COMMAND_WB_SAME_STATUS;
+  cmd[1] = 0x02;
+  cmd[2] = 0; 
+  writeCommand(3, cmd, 14, rsp);
+
+  // Make it return the string
+  return sameMessage;
+}
+
+
+
+
+
+
 /* WB_RSQ_STATUS (0x53) - Returns status information about 
   received signal quality - RSSI, SNR, freq offset.
    Argument (1 byte):
